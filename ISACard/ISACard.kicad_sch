@@ -5424,7 +5424,7 @@
     (property "Reference" "R35" (id 0) (at 107.95 162.56 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "470R" (id 1) (at 105.41 163.83 90)
+    (property "Value" "4k7" (id 1) (at 105.41 163.83 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" (id 2) (at 103.632 161.29 90)
@@ -6126,7 +6126,7 @@
     (property "Reference" "R34" (id 0) (at 102.87 162.56 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "470R" (id 1) (at 100.33 163.83 90)
+    (property "Value" "4k7" (id 1) (at 100.33 163.83 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" (id 2) (at 98.552 161.29 90)
@@ -7648,10 +7648,10 @@
       (reference "R33") (unit 1) (value "10k") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal")
     )
     (path "/838bdca2-c766-4985-8e01-dddd310da0af"
-      (reference "R34") (unit 1) (value "470R") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal")
+      (reference "R34") (unit 1) (value "4k7") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal")
     )
     (path "/3ae69249-8361-4c51-b93e-32198a504a11"
-      (reference "R35") (unit 1) (value "470R") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal")
+      (reference "R35") (unit 1) (value "4k7") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal")
     )
     (path "/96797394-f9c8-4c13-b280-891904ccab0d"
       (reference "SW1") (unit 1) (value "SW_Push") (footprint "Button_Switch_THT:SW_PUSH_6mm")
