@@ -7308,6 +7308,9 @@
     (path "/c9673afe-6a47-4001-a17b-47c886543b3d/0ee51859-a76a-4f70-9dd0-38f92f668cd7"
       (reference "#PWR0120") (unit 1) (value "GND") (footprint "")
     )
+    (path "/c9673afe-6a47-4001-a17b-47c886543b3d/f702b0ea-de4c-4631-b013-6b47d5f78bcf"
+      (reference "#PWR0121") (unit 1) (value "GND") (footprint "")
+    )
     (path "/55acaa97-7fa9-4583-b39f-11cc909a1654"
       (reference "#PWR0122") (unit 1) (value "+5V") (footprint "")
     )
@@ -7544,6 +7547,9 @@
     )
     (path "/c9673afe-6a47-4001-a17b-47c886543b3d/d34440d6-d39d-4120-a8f1-a0cab30513c5"
       (reference "JP18") (unit 1) (value "Jumper_3_Open") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
+    )
+    (path "/c9673afe-6a47-4001-a17b-47c886543b3d/c42f4843-8f2b-4252-b6c8-501cefe2773e"
+      (reference "JP19") (unit 1) (value "Jumper_3_Open") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
     )
     (path "/894132d0-0b37-484f-8e3f-c79af6dacfe0"
       (reference "Q1") (unit 1) (value "2N3904") (footprint "Package_TO_SOT_THT:TO-92_Inline_Wide")
