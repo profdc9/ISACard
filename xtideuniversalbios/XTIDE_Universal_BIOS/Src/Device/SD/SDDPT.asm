@@ -39,9 +39,3 @@ SDDPT_Finalize:
 	eSHL_IM	al, 1
 	mov		BYTE [di+DPT.bFlagsHigh], al
 	ret
-
-%ifndef CHECK_FOR_UNUSED_ENTRYPOINTS
-		%if FLGH_DPT_SD != 0x4
-			%error "The SD card firmware passes FLGH values into SerialDPT_Finalize directly.  If the flag positions are changed, corresponding changes will need to be made in the server, and likely a version check put in to deal with servers talking to incompatible clients"
-		%endif
-%endif

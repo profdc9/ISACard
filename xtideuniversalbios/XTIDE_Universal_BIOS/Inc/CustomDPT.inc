@@ -79,7 +79,7 @@ endstruc
 
 	; SD Card Support (Serial Floppy and SD Card Support Not possible simultaneously currently)
 %ifdef MODULE_SD
-	FLGH_DPT_SD							EQU	(1<<4)				; Bit 4, Drive is a SD card
+	FLGH_DPT_SD_DEVICE					EQU	(1<<4)				; Bit 4, Drive is a SD card
 %endif
 
 	; Serial device only
@@ -159,7 +159,7 @@ endstruc
 		%error "DPT_ATA.bDevice and DPT_SD.bPortIO8255Lo must be in same offsets!"
 	%endif
 %endif
-%endif ; MODULE_SERIAL
+%endif ; MODULE_SD
 
 
 ; This is the common size for all DPTs. All DPTs must be equal size.

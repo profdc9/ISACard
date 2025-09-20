@@ -100,7 +100,7 @@ SECTION .text
 .PushDeviceType:
 	call	AccessDPT_GetIdevarsToCSBX
 	mov		ah, [cs:bx+IDEVARS.bDevice]
-%ifdef MODULE_SD
+%ifdef MODULE_SERIAL
 	test	BYTE [di+DPT.bFlagsHigh], FLGH_DPT_SERIAL_DEVICE	; Clears CF
 	jz		SHORT .PushDeviceType1
 %endif

@@ -29,7 +29,7 @@ SerialServer_SubCommand_Image_SendComplete		EQU		3
 ;
 SerialServer_ATA_wServerVersion			EQU		(157*2)
 SerialServer_ATA_wDriveFlags			EQU		(158*2)
-SerialServer_ATA_wPortIO8255			EQU		(159*2)
+SerialServer_ATA_wPortAndBaud			EQU		(159*2)
 
 ;
 ; Command structure passed to SerialServer_SendReceive.  This mirrors IDEPACK in the XTIDE Universal BIOS, 

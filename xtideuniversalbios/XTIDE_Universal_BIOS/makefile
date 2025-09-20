@@ -26,6 +26,7 @@
 # MODULE_IRQ                  IDE IRQ support                                                      #
 # MODULE_SERIAL               Virtual hard disks using serial port                                 #
 # MODULE_SERIAL_FLOPPY        Virtual floppy drives using serial port (requires MODULE_SERIAL)     #
+# MODULE_SD                   Virtual hard disk using SD card using on-board microcontroller       #
 # MODULE_STRINGS_COMPRESSED   Use compressed strings to save space                                 #
 # MODULE_VERY_LATE_INIT       Initialize on INT 13h if our INT 19h handler is not called           #
 # MODULE_POWER_MANAGEMENT     Power Management support                                             #
@@ -81,6 +82,7 @@ HEADERS += Src/Device/
 HEADERS += Src/Device/IDE/
 HEADERS += Src/Device/MemoryMappedIDE/
 HEADERS += Src/Device/Serial/
+HEADERS += Src/Device/SD/
 HEADERS += Src/Initialization/
 HEADERS += Src/Initialization/AdvancedAta/
 HEADERS += Src/Menus/
@@ -100,6 +102,7 @@ LIBS += ../Assembly_Library/Src/String/
 LIBS += ../Assembly_Library/Src/Time/
 LIBS += ../Assembly_Library/Src/Util/
 LIBS += ../Assembly_Library/Src/Serial/
+LIBS += ../Assembly_Library/Src/SD/
 LIBS += ../XTIDE_Universal_BIOS/Inc/
 HEADERS += $(LIBS)
 
@@ -107,7 +110,7 @@ HEADERS += $(LIBS)
 ##################################
 # Assembler preprocessor defines #
 ##################################
-DEFINES_COMMON = MODULE_STRINGS_COMPRESSED MODULE_HOTKEYS MODULE_8BIT_IDE MODULE_EBIOS MODULE_SERIAL MODULE_SERIAL_FLOPPY MODULE_POWER_MANAGEMENT NO_ATAID_VALIDATION CLD_NEEDED
+DEFINES_COMMON = MODULE_STRINGS_COMPRESSED MODULE_HOTKEYS MODULE_8BIT_IDE MODULE_EBIOS MODULE_SD MODULE_SERIAL MODULE_SERIAL_FLOPPY MODULE_POWER_MANAGEMENT NO_ATAID_VALIDATION CLD_NEEDED
 DEFINES_COMMON_LARGE = MODULE_BOOT_MENU MODULE_8BIT_IDE_ADVANCED MODULE_COMPATIBLE_TABLES
 
 DEFINES_XT = $(DEFINES_COMMON) ELIMINATE_CGA_SNOW MODULE_8BIT_IDE_ADVANCED
@@ -122,7 +125,7 @@ DEFINES_386_LARGE = $(DEFINES_386) $(DEFINES_COMMON_LARGE)
 
 DEFINES_XT_TINY = MODULE_STRINGS_COMPRESSED MODULE_8BIT_IDE NO_ATAID_VALIDATION NO_ATAID_CORRECTION CLD_NEEDED
 
-DEFINES_CUSTOM = ?
+DEFINES_CUSTOM = 
 
 
 ###################
@@ -134,7 +137,7 @@ DEFINES_CUSTOM = ?
 BIOS_SIZE_TINY = 4096
 BIOS_SIZE_SMALL = 8192
 BIOS_SIZE_LARGE = 10240
-BIOS_SIZE_CUSTOM = ?
+BIOS_SIZE_CUSTOM = 8192
 
 # Add -D in front of every preprocessor define declaration
 DEFS_XT = $(DEFINES_XT:%=-D%) -DBIOS_SIZE=$(BIOS_SIZE_SMALL)

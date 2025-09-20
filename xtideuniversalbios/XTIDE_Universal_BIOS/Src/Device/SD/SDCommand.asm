@@ -155,18 +155,7 @@ SDCommand_IdentifyDeviceToBufferInESSIwithDriveSelectByteInBH:
 	push	si
 	call	FindDPT_ToDSDIforSDDevice
 	pop		si
-%ifdef MODULE_SERIAL_FLOPPY
-	jnc		SHORT .founddpt
-;
-; If not found above with FindDPT_ToDSDIforSDDevice, DI will point to the DPT after the last hard disk DPT
-; So, if there was a previously found floppy disk, DI will point to that DPT and we use that value for the slave.
-;
-	cmp		BYTE [RAMVARS.xlateVars+XLATEVARS.bFlopCntAndFirst], 0
-	je		SHORT .notfounddpt
-.founddpt:
-%else
 	jc		SHORT .notfounddpt
-%endif
 	mov		ax, [di+DPT_SD.wPortIO8255]
 .notfounddpt:
 	test	bh, FLG_DRVNHEAD_DRV

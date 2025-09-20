@@ -278,6 +278,12 @@ iend
 	%include "SerialDPT.asm"
 %endif
 
+	; SD Device support
+%ifdef MODULE_SERIAL				; SD support
+	%include "SDCommand.asm"
+	%include "SDDPT.asm"
+%endif
+
 	; INT 13h Hard Disk BIOS functions
 %ifdef MODULE_MFM_COMPATIBILITY
 	%include "Int13hMFMcompatibility.asm"

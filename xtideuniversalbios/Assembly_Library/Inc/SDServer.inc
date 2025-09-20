@@ -29,8 +29,8 @@ SDServer_SubCommand_Image_SendComplete		EQU		3
 ;
 SDServer_ATA_wServerVersion			EQU		(157*2)
 SDServer_ATA_wDriveFlags			EQU		(158*2)
-SDServer_ATA_PortwDriveFlags			EQU		(158*2)
-;
+SDServer_ATA_wPortIO8255			EQU		(159*2)
+
 ; Command structure passed to SDServer_SendReceive.  This mirrors IDEPACK in the XTIDE Universal BIOS, 
 ; since that structure is passed directly without copying values into this structure.
 ;
