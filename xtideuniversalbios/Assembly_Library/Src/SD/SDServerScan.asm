@@ -31,6 +31,9 @@ SECTION .text
 ;--------------------------------------------------------------------
 ; SDServerScan_ScanForServer:
 ;	Parameters:
+;		BH:		Drive Select byte for Drive and Head Select Register
+;				0xAx: Scan for drive, low nibble indicates drive
+;				0x0:  Scan for Server, independent of drives
 ;		DX:		Port Number to Scan
 ;				0: Scan a known set of ports and bauds
 ;		ES:SI:	Ptr to buffer for return

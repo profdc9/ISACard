@@ -88,6 +88,22 @@ istruc MENUITEM
 	at	MENUITEM.itemValue + ITEM_VALUE.rgszValueToStringLookup,	dw	g_rgszValueToStringLookupForFloppyDrives
 iend
 
+g_MenuitemBootMenuSDScanDetect:
+istruc MENUITEM
+	at	MENUITEM.fnActivate,		dw	Menuitem_ActivateMultichoiceSelectionForMenuitemInDSSI
+	at	MENUITEM.fnFormatValue,		dw	MenuitemPrint_WriteLookupValueStringToBufferInESDIfromShiftedItemInDSSI
+	at	MENUITEM.szName,			dw	g_szItemSDDetect
+	at	MENUITEM.szQuickInfo,		dw	g_szNfoSDDetect
+	at	MENUITEM.szHelp,			dw	g_szHelpSDDetect
+	at	MENUITEM.bFlags,			db	FLG_MENUITEM_FLAGVALUE
+	at	MENUITEM.bType,				db	TYPE_MENUITEM_MULTICHOICE
+	at	MENUITEM.itemValue + ITEM_VALUE.wRomvarsValueOffset,		dw	ROMVARS.wFlags
+	at	MENUITEM.itemValue + ITEM_VALUE.szDialogTitle,				dw	g_szDlgSDDetect
+	at	MENUITEM.itemValue + ITEM_VALUE.szMultichoice,				dw	g_szMultichoiceBooleanFlag
+	at	MENUITEM.itemValue + ITEM_VALUE.rgszValueToStringLookup,	dw	g_rgszValueToStringLookupForFlagBooleans
+	at	MENUITEM.itemValue + ITEM_VALUE.wValueBitmask,				dw	FLG_ROMVARS_SD_SCANDETECT
+iend
+
 g_MenuitemBootMenuSerialScanDetect:
 istruc MENUITEM
 	at	MENUITEM.fnActivate,		dw	Menuitem_ActivateMultichoiceSelectionForMenuitemInDSSI
@@ -254,11 +270,29 @@ BootMenuSettingsMenu_EnterMenuOrModifyItemVisibility:
 	pop		ds
 	call	Buffers_GetRomvarsFlagsToAX
 	call	.EnableOrDisableScanForSerialDrives
+	call	.EnableOrDisableScanForSDDrives
 	call	.EnableOrDisableDefaultBootDrive
 	call	.EnableOrDisableColorThemeSelection
 	call	.EnableOrDisableBootMenuSelectionTimeout
 	mov		si, g_MenupageForBootMenuSettingsMenu
 	jmp		Menupage_ChangeToNewMenupageInDSSI
+
+
+;--------------------------------------------------------------------
+; .EnableOrDisableScanForSDDrives
+;	Parameters:
+;		AX:		ROMVARS.wFlags
+;		SS:BP:	Menu handle
+;	Returns:
+;		Nothing
+;	Corrupts registers:
+;		BX
+;--------------------------------------------------------------------
+ALIGN JUMP_ALIGN
+.EnableOrDisableScanForSDDrives:
+	mov		bx, g_MenuitemBootMenuSDScanDetect
+	test	ax, FLG_ROMVARS_MODULE_SD
+	jmp		SHORT .DisableMenuitemFromCSBXifZFset
 
 
 ;--------------------------------------------------------------------

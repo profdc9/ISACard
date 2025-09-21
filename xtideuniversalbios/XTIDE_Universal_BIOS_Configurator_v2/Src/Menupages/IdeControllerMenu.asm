@@ -122,11 +122,28 @@ istruc MENUITEM
 	at	MENUITEM.itemValue + ITEM_VALUE.fnValueWriter,				dw	IdeControllerMenu_SerialWriteCOM
 iend
 
+g_MenuitemIdeControllerSDPort:
+istruc MENUITEM
+	at	MENUITEM.fnActivate,		dw	Menuitem_ActivateHexInputForMenuitemInDSSI
+	at	MENUITEM.fnFormatValue,		dw	MenuitemPrint_WriteHexValueStringToBufferInESDIfromItemInDSSI
+	at	MENUITEM.szName,			dw	g_szItemSDPort
+	at	MENUITEM.szQuickInfo,		dw	g_szNfoIdeSDPort
+	at	MENUITEM.szHelp,			dw	g_szHelpIdeSDPort
+	at	MENUITEM.bFlags,			db	FLG_MENUITEM_MODIFY_MENU | FLG_MENUITEM_BYTEVALUE
+	at	MENUITEM.bType,				db	TYPE_MENUITEM_HEX
+	at	MENUITEM.itemValue + ITEM_VALUE.wRomvarsValueOffset,		dw	NULL
+	at	MENUITEM.itemValue + ITEM_VALUE.szDialogTitle,				dw	g_szDlgIdeCmdPort
+	at	MENUITEM.itemValue + ITEM_VALUE.wMinValue,					dw	8h
+	at	MENUITEM.itemValue + ITEM_VALUE.wMaxValue,					dw	3F8h
+	at	MENUITEM.itemValue + ITEM_VALUE.fnValueReader,				dw	IdeControllerMenu_SDReadPort
+	at	MENUITEM.itemValue + ITEM_VALUE.fnValueWriter,				dw	IdeControllerMenu_SDWritePort
+iend
+
 g_MenuitemIdeControllerSerialPort:
 istruc MENUITEM
 	at	MENUITEM.fnActivate,		dw	Menuitem_ActivateHexInputForMenuitemInDSSI
 	at	MENUITEM.fnFormatValue,		dw	MenuitemPrint_WriteHexValueStringToBufferInESDIfromItemInDSSI
-	at	MENUITEM.szName,			dw	g_szItemSerialPort
+g	at	MENUITEM.szName,			dw	g_szItemSerialPort
 	at	MENUITEM.szQuickInfo,		dw	g_szNfoIdeSerialPort
 	at	MENUITEM.szHelp,			dw	g_szHelpIdeSerialPort
 	at	MENUITEM.bFlags,			db	FLG_MENUITEM_MODIFY_MENU | FLG_MENUITEM_BYTEVALUE
@@ -200,6 +217,7 @@ g_rgwChoiceToValueLookupForDevice:
 	dw	DEVICE_8BIT_JRIDE_ISA
 	dw	DEVICE_8BIT_ADP50L
 	dw	DEVICE_SERIAL_PORT
+	dw	DEVICE_SD
 g_rgszValueToStringLookupForDevice:
 	dw	g_szValueCfgDevice16b
 	dw	g_szValueCfgDevice32b
@@ -248,6 +266,8 @@ g_rgszChoiceToStringLookupForCOM:
 SERIAL_DEFAULT_CUSTOM_PORT		EQU		300h		; can't be any of the pre-defined COM values
 SERIAL_DEFAULT_COM				EQU		'1'
 SERIAL_DEFAULT_BAUD				EQU		((115200 / 9600)	& 0xff)
+
+SD_DEFAULT_IO					EQU		300h		; can't be any of the pre-defined COM values
 
 PackedCOMPortAddresses:								; COM1 - COMC (or COM12)
 	db		SERIAL_COM1_IOADDRESS >> 2
@@ -331,6 +351,9 @@ IdeControllerMenu_InitializeToIdevarsOffsetInBX:
 
 	lea		ax, [bx+IDEVARS.bSerialCOMPortChar]
 	mov		[cs:g_MenuitemIdeControllerSerialCOM+MENUITEM.itemValue+ITEM_VALUE.wRomvarsValueOffset], ax
+
+	lea		ax, [bx+IDEVARS.wSDIOPort8255]
+	mov		[cs:g_MenuitemIdeControllerSDPort+MENUITEM.itemValue+ITEM_VALUE.wRomvarsValueOffset], ax
 
 	lea		ax, [bx+IDEVARS.bIRQ]
 	mov		[cs:g_MenuitemIdeControllerEnableInterrupt+MENUITEM.itemValue+ITEM_VALUE.wRomvarsValueOffset], ax
@@ -598,6 +621,8 @@ IdeControllerMenu_WriteDevice:
 	jb		SHORT .NotSerialDevice
 	test	BYTE [es:ROMVARS.wFlags+1], FLG_ROMVARS_MODULE_SERIAL >> 8
 	jnz		SHORT .ChangingToSerial
+	test	BYTE [es:ROMVARS.wFlags+1], FLG_ROMVARS_MODULE_SD >> 8
+	jnz		SHORT .ChangingToSD
 
 .SupportForDeviceNotAvailable:
 	mov		dx, g_szUnsupportedDevice
@@ -665,12 +690,17 @@ IdeControllerMenu_WriteDevice:
 	sub		di, IDEVARS.wBasePort - IDEVARS.bSerialCOMPortChar
 	call	IdeControllerMenu_SerialWriteCOM
 	stosb
+	jmp		SHORT .Done
+
+.ChangingToSD:
+
+	mov		ax, SD_DEFAULT_IO 
+	mov		WORD [es:di+IDEVARS.wSDIOPort8255-IDEVARS.wBasePort], SD_DEFAULT_IO
 
 .Done:
 	pop		ax
 	pop		di
 	ret
-
 
 ;--------------------------------------------------------------------
 ; IdeControllerMenu_SerialWriteCOM
@@ -711,6 +741,48 @@ IdeControllerMenu_SerialWriteCOM:
 
 	pop		si
 	pop		ax
+	ret
+
+;--------------------------------------------------------------------
+; IdeControllerMenu_SDReadPort
+;
+;	Parameters:
+;		AX:		Value read from the ROMVARS location
+;		ES:DI:	ROMVARS location where the value was just read from
+;		DS:SI:	MENUITEM pointer
+;	Returns:
+;		AX:		Value that the MENUITEM system will interact with and display
+;	Corrupts registers:
+;		Nothing
+;--------------------------------------------------------------------
+ALIGN JUMP_ALIGN
+IdeControllerMenu_SDReadPort:
+	and		ax,0x3F8
+	ret
+
+;--------------------------------------------------------------------
+; IdeControllerMenu_SDWritePort
+;
+; And convert from Custom to a defined COM port if we
+; match one of the pre-defined COM port numbers
+;
+;	Parameters:
+;		AX:		Value that the MENUITEM system was interacting with
+;		ES:DI:	ROMVARS location where the value is to be stored
+;		DS:SI:	MENUITEM pointer
+;	Returns:
+;		AX:		Value to actually write to ROMVARS
+;	Corrupts registers:
+;		BX
+;--------------------------------------------------------------------
+ALIGN JUMP_ALIGN
+IdeControllerMenu_SDWritePort:
+	push	si
+
+	and		ax,0x3F8
+	mov		[es:di+IDEVARS.wSDIOPort8255-IDEVARS.wBasePort], ax
+
+	pop		si
 	ret
 
 

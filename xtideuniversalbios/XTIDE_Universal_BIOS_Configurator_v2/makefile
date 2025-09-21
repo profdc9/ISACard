@@ -81,13 +81,13 @@ TARGET = $(BUILD_DIR)/$(PROG)
 #########################
 
 # Make
-MAKE = mingw32-make.exe
+MAKE = make
 
 # Assembler
-AS = nasm.exe
+AS = nasm
 
 # use this command to erase files.
-RM = -del /Q
+RM = rm -f
 
 
 #############################

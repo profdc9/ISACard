@@ -221,6 +221,7 @@ g_szItemSerialBaud:			db	"Baud Rate",NULL
 g_szItemSerialPort:			db	"COM Port I/O address",NULL
 g_szItemIdeSerialComPort:	db	"COM port",NULL
 g_szItemIdeSerialBaudRate:	db	"Baud rate",NULL
+g_szItemSDPort				db	"8255 I/O address",NULL
 
 g_szDlgDevice:				db	"Select controller type.",NULL
 g_szDlgIdeCmdPort:			db	"Enter IDE command block (base port) address.",NULL
@@ -242,6 +243,7 @@ g_szNfoIdeSerialCOM:		db	"Select a COM port by number.",NULL
 g_szNfoIdeSerialBaud:		db	"Select the COM port's Baud Rate. The server must match this speed."
 							db	" Note that UART clock multipliers may impact the actual speed.",NULL
 g_szNfoIdeSerialPort:		db	"Select a COM port by custom I/O port address. Any address is valid up to 3F8h, but must be on an 8-byte boundary.",NULL
+g_szNfoIdeSDPort:			db	"Select the 8255 port by custom I/O port address. Any address is valid up to 3F8h, but must be on an 8-byte boundary.",NULL
 
 g_szHelpIdeCmdPort:			db	"IDE controller command block address is the usual address mentioned for IDE controllers."
 							db	" By default the primary IDE controller uses port 1F0h and secondary controller uses port 170h."
@@ -269,6 +271,8 @@ g_szHelpIdeSerialCOM:		db	"Select a serial port by COM port number. COM1 through
 g_szHelpIdeSerialPort:		db	"Select a serial port by I/O address. Any port address is supported up to 3F8h, but must be on an 8-byte boundary."
 							db	" If the entered value corresponds to one of the established COM port numbers, then the selection will snap"
 							db	' to that COM port and "COMx" must be selected again for custom I/O address entry.',NULL
+
+g_szHelpIdeSDPort:			db	"Select the 8255 port I/O address. Any port address is supported up to 3F8h, but must be on an 8-byte boundary.".NULL
 
 g_szHelpIdeSerialBaud:		db	"Supported baud rates are 2400, 4800, 9600, 19.2K, 28.8K, 38.4K, 57.6K, and 115.2K. The server must also be set to"
 							db	" this same speed. Older UARTs may only support up to 9600 baud, but sometimes can be pushed to 38.4K. 115.2K will"
@@ -437,6 +441,7 @@ g_szItemBootDispMode:			db	"Display Mode",NULL
 g_szItemColorTheme:				db	"Color Theme",NULL
 g_szItemBootFloppyDrvs:			db	"Number of Floppy Drives",NULL
 g_szItemSerialDetect:			db	"Scan for Serial Drives",NULL
+g_szItemSDDetect:				db	"Scan for SD (8255) Ports",NULL
 g_szItemClearBdaDriveCount:		db	"Remove other hard drives",NULL
 
 g_szDlgBootTimeout:				db	"Enter Boot Menu selection timeout in BIOS timer ticks (2...1092).",NULL
@@ -445,6 +450,7 @@ g_szDlgBootDispMode:			db	"Select display mode.",NULL
 g_szDlgColorTheme:				db	"Select color theme.",NULL
 g_szDlgBootFloppyDrvs:			db	"Select number of Floppy Drives in system.",NULL
 g_szDlgSerialDetect:			db	"Scan for serial drives?",NULL
+g_szDlgSDDetect:				db	"Scan for SD (8255) ports?",NULL
 g_szDlgClearBdaDriveCount:		db	"Remove existing INT 13h hard drives during drive detection?",NULL
 
 g_szNfoBootTimeout:				db	"Menu item selection timeout in BIOS timer ticks. 1 tick = 54.9 ms.",NULL
@@ -454,6 +460,7 @@ g_szNfoColorTheme:				db	"Color theme used by the boot menu and the hotkey bar."
 g_szNfoBootFloppyDrvs:			db	"Number of Floppy Drives in system.",NULL
 g_szNfoSerialDetect:			db	"Scans all standard COM ports for serial drives."
 								db	" This can also be invoked by holding down ALT at the end of normal drive detection.",NULL
+g_szNfoSDDetect:				db	"Scans predefined ports for SD (8255).",NULL
 g_szNfoClearBdaDriveCount:		db	"Can be used to remove duplicate hard drives.",NULL
 
 g_szHelpBootTimeout:			db	"Boot Menu selection timeout in BIOS timer ticks (1 second = 18.2 ticks)."
@@ -474,6 +481,8 @@ g_szHelpSerialDetect:			db	"Set to Yes, at the end of normal drive detection, CO
 								db	" Even when this option is set to No, this functionality can still be invoked by holding down the ALT key at the end"
 								db	" of normal drive detection. Note that if any serial drives are detected during the normal drive detection,"
 								db	" no scan will take place (to avoid finding the same drive twice).",NULL
+g_szHelpSDDetect:				db	"Set to Yes, at the end of normal drive detection, four predefined ports are scanned for a 8255."
+								db	"This slows the boot process but may help identify the 8255.",NULL
 g_szHelpClearBdaDriveCount:		db	"Set to NO for normal operation. Set to YES to get Windows 9x protected mode drivers to work when"
 								db	" MODULE_WIN9X_CMOS_HACK is not included (dummy drive needs to be defined in system BIOS setup). This option must"
 								db	" also be set to YES on computers where the system BIOS does not initialize RAM properly. Zenith models Z-171 and"

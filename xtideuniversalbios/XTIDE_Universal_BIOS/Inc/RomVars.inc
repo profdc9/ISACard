@@ -68,6 +68,9 @@ struc IDEVARS
 	.bDevice					resb	1	; Device type
 	.bIRQ						resb	1	; Interrupt Request Number
 
+;;; Word 3
+	.wSDIOPort8255				resb	2	; Base Port for 8255 chip
+
 ;;; And more...
 	.drvParamsMaster			resb	DRVPARAMS_size
 	.drvParamsSlave				resb	DRVPARAMS_size
@@ -191,6 +194,9 @@ FLG_ROMVARS_CLEAR_BDA_HD_COUNT			EQU	(1<<1)	; This flag has two purposes; * Remo
 FLG_ROMVARS_SERIAL_SCANDETECT 			EQU	(1<<3)	; Scan COM ports at the end of drive detection.  Can also be invoked
 													; by holding down the ALT key at the end of drive detection.
 													; (Conveniently, this is 8, a fact we exploit when testing the bit)
+FLG_ROMVARS_SD_SCANDETECT	 			EQU	(1<<4)	; Scan COM ports at the end of drive detection.  Can also be invoked
+													; by holding down the ALT key at the end of drive detection.
+													; (Conveniently, this is 8, a fact we exploit when testing the bit)
 
 ; Here in case the configuration needs to know functionality is present. Note! Changing the order/location of these flags
 ; also requires changes elsewhere as they are usually tested using byte-accesses for efficiency.
@@ -206,6 +212,7 @@ FLG_ROMVARS_MODULE_SERIAL				EQU (1<<13)
 FLG_ROMVARS_MODULE_SERIAL_FLOPPY		EQU (1<<14)
 FLG_ROMVARS_MODULE_STRINGS_COMPRESSED	EQU (1<<15)
 
+FLG_ROMVARS_MODULE_SD					EQU (1<<14)
 
 ; Boot Menu Display Modes (see Assembly Library Display.inc for standard modes)
 DEFAULT_TEXT_MODE		EQU	4

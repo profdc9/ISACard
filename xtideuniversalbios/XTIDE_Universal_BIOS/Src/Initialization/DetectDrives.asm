@@ -66,24 +66,26 @@ DetectDrives_FromAllIDEControllers:
 %endif
 	loop	.DriveDetectLoop
 
-%ifdef MODULE_SERIAL OR MODULE_SD
+%ifdef MODULE_SD
+	call	FindDPT_ToDSDIforSDDevice	; Does not modify AX
+	jnc		SHORT .ContModuleSerial
+	mov		bp, ROMVARS.ideVarsSDAuto	; Point to our special IDEVARS structure, just for SD scans
+
+	mov		al, [cs:ROMVARS.wFlags]			; Configurator set to always scan?
+	and		al, 16							; FLG_ROMVARS_SD_SCANDETECT
+	jnz		SHORT .DriveDetectLoop
+.ContModuleSerial:
+%endif
+
+%ifdef MODULE_SERIAL
 ;----------------------------------------------------------------------
 ;
 ; if serial drive detected, do not scan (avoids duplicate drives and isn't needed - we already have a connection)
 ;
-%ifdef MODULE_SERIAL
 	call	FindDPT_ToDSDIforSerialDevice	; Does not modify AX
 	jnc		SHORT .AddHardDisks
 
 	mov		bp, ROMVARS.ideVarsSerialAuto	; Point to our special IDEVARS structure, just for serial scans
-%endif
-%ifdef MODULE_SD
-	call	FindDPT_ToDSDIforSDDevice	; Does not modify AX
-	jnc		SHORT .AddHardDisks
-
-	mov		bp, ROMVARS.ideVarsSDAuto	; Point to our special IDEVARS structure, just for SD scans
-%endif
-
 
 %ifdef MODULE_HOTKEYS
 	cmp		al, COM_DETECT_HOTKEY_SCANCODE	; Set by last call to ScanHotkeysFromKeyBufferAndStoreToBootvars above
@@ -94,7 +96,7 @@ DetectDrives_FromAllIDEControllers:
 	or		al, [es:BDA.bKBFlgs1]			; Or, did the user hold down the ALT key?
 	and		al, 8							; 8 = alt key depressed, same as FLG_ROMVARS_SERIAL_SCANDETECT
 	jnz		SHORT .DriveDetectLoop
-%endif ; MODULE_SERIAL OR MODULE_SD
+%endif ; MODULE_SERIAL
 
 .AddHardDisks:
 ;----------------------------------------------------------------------

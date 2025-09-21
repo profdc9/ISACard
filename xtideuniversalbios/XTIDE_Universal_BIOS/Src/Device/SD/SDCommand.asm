@@ -149,7 +149,7 @@ SDCommand_IdentifyDeviceToBufferInESSIwithDriveSelectByteInBH:
 ;     Instead of performing the full COM port scan for the slave, use the port/baud value stored during the
 ;     master scan.
 ;
-	mov		dx, [cs:bp+IDEVARS.wSerialPortAndBaud]
+	mov		dx, [cs:bp+IDEVARS.wSDIOPort8255]
 	xor		ax, ax
 
 	push	si

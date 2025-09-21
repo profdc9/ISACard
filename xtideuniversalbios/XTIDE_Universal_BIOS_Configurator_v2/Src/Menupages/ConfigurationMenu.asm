@@ -424,6 +424,8 @@ ConfigurationMenu_CheckAndMoveSerialDrivesToBottom:
 .loop:
 	cmp		BYTE [di+IDEVARS.bDevice], DEVICE_SERIAL_PORT
 	jne		SHORT .notSerial
+	cmp		BYTE [di+IDEVARS.bDevice], DEVICE_SD
+	jne		SHORT .notSerial
 
 	test	si, si						; record the first serial controller that we find
 	jnz		SHORT .next
