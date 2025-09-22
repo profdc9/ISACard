@@ -78,7 +78,13 @@ SDServer_SendReceive:
 
 	mov		cx, 6						; writing 6 bytes
 
-	call	SDServer_WriteBytes
+	mov		bl,dl						; prepare BH for correct offsets
+	add		bl,SD_8255_Port_C
+	mov		bh,bl
+	mov		bl,dl
+	add		bl,SD_8255_Port_A
+
+	call	SDServer_WriteBytes.SendAByte
 
 	pop		di							; restore real buffer location (note change from SI to DI)
 										; Buffer is primarily referenced through ES:DI throughout, since
@@ -97,23 +103,16 @@ SDServer_SendReceive:
 ; Top of the read/write loop, one iteration per sector
 ;
 .nextSector:
-	mov		cx, 0200h					; writing 512 bytes
+	mov		cx, 0200h					; reading/writing 512 bytes
 
 	sahf								; command byte, are we doing a write?
 	jnc		SHORT .readDataBlock
 
-	xchg	si, di						; swap pointer and checksum, will be re-swap'ed in WriteProtocol
-	call	SDServer_WriteBytes
-
-.zeroSectors:
-	mov		cx,2
+	xchg	si, di						; swap pointer and checksum, will be re-swap'ed in WriteBytes
+	call	SDServer_WriteBytes.SendAByte
+	jmp		SHORT .decSector
 
 .readDataBlock:
-	mov		bl,dl
-	add		bl,SD_8255_Port_C
-	mov		bh,bl
-	mov		bl,dl
-	add		bl,SD_8255_Port_A
 .readDataBlock1:
 	mov		dl,bh
 .readDataBlock2:
@@ -124,14 +123,21 @@ SDServer_SendReceive:
 	in		al,dx
 	stosb								; store in caller's data buffer
 	loop	.readDataBlock1
-	sub		dl,SD_8255_Port_A
 
+.decSector:
 	pop		ax							; sector count and command byte
 	dec		al							; decrement sector count
 	push	ax							; save
-	jz		SHORT SDServer_OutputWithParameters_ReturnCodeInAL
+	jnz		SHORT .nextSector
 
-	jmp		SHORT .nextSector
+.zeroSectors:
+	mov		dl,bh						; read status byte
+.waitReadStatus:
+	in		al,dx
+	test	al,020h
+	jz		SHORT .waitReadStatus
+	mov		dl,bl
+	in		al,dx
 
 ;---------------------------------------------------------------------------
 ;
@@ -171,11 +177,11 @@ SDServer_OutputWithParameters_ReturnCodeInAL:
 ;		AX BX
 ;--------------------------------------------------------------------
 SDServer_WriteBytes:
-	mov		bl,dl
-	add		bl,SD_8255_Port_C
-	mov		bh,bl
-	mov		bl,dl
-	add		bl,SD_8255_Port_A
+;	mov		bl,dl
+;	add		bl,SD_8255_Port_C
+;	mov		bh,bl
+;	mov		bl,dl
+;	add		bl,SD_8255_Port_A
 .SendAByte:
 	es lodsw
 	mov		dl,bl
@@ -186,6 +192,5 @@ SDServer_WriteBytes:
 	test	al,080h
 	jz		SHORT .WaitForReceive
 	loop	.SendAByte
-	sub		dl,SD_8255_Port_C
 	xchg	si, di
 	ret

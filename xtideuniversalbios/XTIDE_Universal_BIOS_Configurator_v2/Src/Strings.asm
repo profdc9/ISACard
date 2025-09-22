@@ -243,7 +243,7 @@ g_szNfoIdeSerialCOM:		db	"Select a COM port by number.",NULL
 g_szNfoIdeSerialBaud:		db	"Select the COM port's Baud Rate. The server must match this speed."
 							db	" Note that UART clock multipliers may impact the actual speed.",NULL
 g_szNfoIdeSerialPort:		db	"Select a COM port by custom I/O port address. Any address is valid up to 3F8h, but must be on an 8-byte boundary.",NULL
-g_szNfoIdeSDPort:			db	"Select the 8255 port by custom I/O port address. Any address is valid up to 3F8h, but must be on an 8-byte boundary.",NULL
+g_szNfoIdeSDPort:			db	"Select the 8255 port by custom I/O port address. Any address is valid up to 3FCh, but must be on an 4-byte boundary.",NULL
 
 g_szHelpIdeCmdPort:			db	"IDE controller command block address is the usual address mentioned for IDE controllers."
 							db	" By default the primary IDE controller uses port 1F0h and secondary controller uses port 170h."
@@ -272,7 +272,7 @@ g_szHelpIdeSerialPort:		db	"Select a serial port by I/O address. Any port addres
 							db	" If the entered value corresponds to one of the established COM port numbers, then the selection will snap"
 							db	' to that COM port and "COMx" must be selected again for custom I/O address entry.',NULL
 
-g_szHelpIdeSDPort:			db	"Select the 8255 port I/O address. Any port address is supported up to 3F8h, but must be on an 8-byte boundary.".NULL
+g_szHelpIdeSDPort:			db	"Select the 8255 port I/O address. Any port address is supported up to 3FCh, but must be on an 4-byte boundary.",NULL
 
 g_szHelpIdeSerialBaud:		db	"Supported baud rates are 2400, 4800, 9600, 19.2K, 28.8K, 38.4K, 57.6K, and 115.2K. The server must also be set to"
 							db	" this same speed. Older UARTs may only support up to 9600 baud, but sometimes can be pushed to 38.4K. 115.2K will"
@@ -294,7 +294,8 @@ g_szMultichoiceCfgDevice:	db	"16-bit ISA/VLB/PCI IDE",LF
 							db	"XT-CF DMA (v3 only)",LF
 							db	"JR-IDE/ISA",LF
 							db	"SVC ADP50L",LF
-							db	"Serial port virtual device",NULL
+							db	"Serial port virtual device",LF,
+							db	"SD virtual device",NULL
 
 g_szValueCfgDevice16b:						db	"16-bit",NULL
 g_szValueCfgDevice32b:						db	"32-bit",NULL
@@ -309,6 +310,7 @@ g_szValueCfgDeviceXTCFDMA:					db	"XTCF DMA",NULL
 g_szValueCfgDeviceJrIdeIsa:					db	"JR-ISA",NULL
 g_szValueCfgDeviceADP50L:					db	"ADP50L",NULL
 g_szValueCfgDeviceSerial:					db	"Serial",NULL
+g_szValueCfgDeviceSD:						db	"SD",NULL
 
 g_szSerialCOMChoice:			db	"COM1 - address 3F8h",LF
 								db	"COM2 - address 2F8h",LF

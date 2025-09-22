@@ -80,7 +80,7 @@ SDServerScan_ScanForServer:
 ;		BH:		Drive Select byte for Drive and Head Select Register
 ;				0xAx: Scan for drive, low nibble indicates drive
 ;				0x0:  Scan for Server, independent of drives
-;		DX:		Baud and Port
+;		DX:		Port Number
 ;		CH:		1: We are doing a scan for the SD server
 ;				0: We are working off a specific port given by the user
 ;		CL:		1, for one sector to read
@@ -96,12 +96,15 @@ SDServerScan_CheckForServer_PortInDX:
 	push	dx				; send port baud and rate, returned in inquire packet
 							; (and possibly returned in the drive identification string)
 	push	cx				; send number of sectors, and if it is on a scan or not
+
+	call	SDServer_CheckPort
+	jc		SHORT .skipscan
 	mov		bl, SDServer_Command_Inquire		; protocol command onto stack with bh
 	push	bx
 
 	mov		bp, sp
 	call	SDServer_SendReceive
-
+.skipscan:
 	pop		bx
 	pop		cx
 	pop		dx
@@ -138,7 +141,7 @@ SDOutTimeout:
 	ret
 .SDOutTimeoutRecv:
 	clc
-	jnc		SHORT .SDOutTimeout2
+	jmp		SHORT .SDOutTimeout2
 
 ;-------------------------------------------------------------------
 ; Port input timeout
@@ -159,12 +162,12 @@ SDInTimeout:
 	jnz		SHORT .SDInTimeoutRecv
 	loop	.SDInTimeout1
 	stc
-	jc		SHORT SDOutTimeout.SDOutTimeout2
+	jmp		SHORT SDOutTimeout.SDOutTimeout2
 .SDInTimeoutRecv:
 	sub		dl,(SD_8255_Port_C-SD_8255_Port_A)
 	in		al,dx
 	clc
-	jnc		SHORT SDOutTimeout.SDOutTimeout2
+	jmp		SHORT SDOutTimeout.SDOutTimeout2
 
 ;-------------------------------------------------------------------
 ; SDServer_CheckPort
@@ -207,5 +210,6 @@ SDServer_CheckPort:
 	stc
 	ret
 .SDServer_CheckPort2:
+	pop		cx
 	clc
 	ret

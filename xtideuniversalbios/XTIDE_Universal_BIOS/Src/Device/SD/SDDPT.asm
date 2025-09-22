@@ -25,9 +25,6 @@ SECTION .text
 ;	Parameters:
 ;		DS:DI:	Ptr to Disk Parameter Table
 ;		ES:SI:	Ptr to 512-byte ATA information read from the drive
-;	Returns:
-;		CF:		Set, indicates that this is a floppy disk
-;				Clear, indicates that this is a hard disk
 ;	Corrupts registers:
 ;		AX
 ;--------------------------------------------------------------------

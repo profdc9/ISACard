@@ -143,7 +143,7 @@ endstruc
 %endif
 %endif ; MODULE_SERIAL
 
-; DPT for Serial devices
+; DPT for SD
 %ifdef MODULE_SD
 struc DPT_SD
 	.dpt					resb	DPT_size

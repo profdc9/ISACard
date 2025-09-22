@@ -68,9 +68,6 @@ struc IDEVARS
 	.bDevice					resb	1	; Device type
 	.bIRQ						resb	1	; Interrupt Request Number
 
-;;; Word 3
-	.wSDIOPort8255				resb	2	; Base Port for 8255 chip
-
 ;;; And more...
 	.drvParamsMaster			resb	DRVPARAMS_size
 	.drvParamsSlave				resb	DRVPARAMS_size

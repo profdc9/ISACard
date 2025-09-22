@@ -133,8 +133,8 @@ istruc MENUITEM
 	at	MENUITEM.bType,				db	TYPE_MENUITEM_HEX
 	at	MENUITEM.itemValue + ITEM_VALUE.wRomvarsValueOffset,		dw	NULL
 	at	MENUITEM.itemValue + ITEM_VALUE.szDialogTitle,				dw	g_szDlgIdeCmdPort
-	at	MENUITEM.itemValue + ITEM_VALUE.wMinValue,					dw	8h
-	at	MENUITEM.itemValue + ITEM_VALUE.wMaxValue,					dw	3F8h
+	at	MENUITEM.itemValue + ITEM_VALUE.wMinValue,					dw	4h
+	at	MENUITEM.itemValue + ITEM_VALUE.wMaxValue,					dw	3FCh
 	at	MENUITEM.itemValue + ITEM_VALUE.fnValueReader,				dw	IdeControllerMenu_SDReadPort
 	at	MENUITEM.itemValue + ITEM_VALUE.fnValueWriter,				dw	IdeControllerMenu_SDWritePort
 iend
@@ -232,6 +232,7 @@ g_rgszValueToStringLookupForDevice:
 	dw	g_szValueCfgDeviceJrIdeIsa
 	dw	g_szValueCfgDeviceADP50L
 	dw	g_szValueCfgDeviceSerial
+	dw	g_szValueCfgDeviceSD
 
 g_rgbChoiceToValueLookupForCOM:
 	dw	'1'
@@ -267,7 +268,7 @@ SERIAL_DEFAULT_CUSTOM_PORT		EQU		300h		; can't be any of the pre-defined COM val
 SERIAL_DEFAULT_COM				EQU		'1'
 SERIAL_DEFAULT_BAUD				EQU		((115200 / 9600)	& 0xff)
 
-SD_DEFAULT_IO					EQU		300h		; can't be any of the pre-defined COM values
+SD_DEFAULT_IO					EQU		330h
 
 PackedCOMPortAddresses:								; COM1 - COMC (or COM12)
 	db		SERIAL_COM1_IOADDRESS >> 2
@@ -352,7 +353,7 @@ IdeControllerMenu_InitializeToIdevarsOffsetInBX:
 	lea		ax, [bx+IDEVARS.bSerialCOMPortChar]
 	mov		[cs:g_MenuitemIdeControllerSerialCOM+MENUITEM.itemValue+ITEM_VALUE.wRomvarsValueOffset], ax
 
-	lea		ax, [bx+IDEVARS.wSDIOPort8255]
+	lea		ax, [bx+IDEVARS.wBasePort]
 	mov		[cs:g_MenuitemIdeControllerSDPort+MENUITEM.itemValue+ITEM_VALUE.wRomvarsValueOffset], ax
 
 	lea		ax, [bx+IDEVARS.bIRQ]
@@ -618,9 +619,12 @@ IdeControllerMenu_WriteDevice:
 
 .NotStandardIdeDevice:
 	cmp		al, DEVICE_SERIAL_PORT
-	jb		SHORT .NotSerialDevice
+	jne		SHORT .NotSerialDevice
 	test	BYTE [es:ROMVARS.wFlags+1], FLG_ROMVARS_MODULE_SERIAL >> 8
 	jnz		SHORT .ChangingToSerial
+.NotSerialDevice:
+	cmp		al, DEVICE_SD
+	jne		SHORT .NotSDDevice
 	test	BYTE [es:ROMVARS.wFlags+1], FLG_ROMVARS_MODULE_SD >> 8
 	jnz		SHORT .ChangingToSD
 
@@ -635,7 +639,7 @@ IdeControllerMenu_WriteDevice:
 	pop		di
 	ret
 
-.NotSerialDevice:
+.NotSDDevice:
 	; Remaining device types all require MODULE_8BIT_IDE or MODULE_8BIT_IDE_ADVANCED
 	test	BYTE [es:ROMVARS.wFlags], FLG_ROMVARS_MODULE_8BIT_IDE | FLG_ROMVARS_MODULE_8BIT_IDE_ADVANCED
 	jz		SHORT .SupportForDeviceNotAvailable
@@ -694,8 +698,7 @@ IdeControllerMenu_WriteDevice:
 
 .ChangingToSD:
 
-	mov		ax, SD_DEFAULT_IO 
-	mov		WORD [es:di+IDEVARS.wSDIOPort8255-IDEVARS.wBasePort], SD_DEFAULT_IO
+	mov		WORD [es:di], SD_DEFAULT_IO
 
 .Done:
 	pop		ax
@@ -757,7 +760,7 @@ IdeControllerMenu_SerialWriteCOM:
 ;--------------------------------------------------------------------
 ALIGN JUMP_ALIGN
 IdeControllerMenu_SDReadPort:
-	and		ax,0x3F8
+	and		ax,0x3FC
 	ret
 
 ;--------------------------------------------------------------------
@@ -779,8 +782,8 @@ ALIGN JUMP_ALIGN
 IdeControllerMenu_SDWritePort:
 	push	si
 
-	and		ax,0x3F8
-	mov		[es:di+IDEVARS.wSDIOPort8255-IDEVARS.wBasePort], ax
+	and		ax,0x3FC
+	mov		[es:di], ax
 
 	pop		si
 	ret
