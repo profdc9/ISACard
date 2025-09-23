@@ -58,9 +58,6 @@ SDServerScan_ScanForServer:
 	eSHL_IM	dx, 2			; shift from one byte to two
 	jz		SHORT .error
 
-	call	SDServer_CheckPort  ; check for the microcontroller
-	jc		SHORT .nextPort
-
 	call	SDServerScan_CheckForServer_PortInDX
 	jc		SHORT .nextPort
 
@@ -104,8 +101,8 @@ SDServerScan_CheckForServer_PortInDX:
 
 	mov		bp, sp
 	call	SDServer_SendReceive
-.skipscan:
 	pop		bx
+.skipscan:
 	pop		cx
 	pop		dx
 	pop		bp

@@ -9,9 +9,6 @@ SD_8255_Port_A							EQU		0
 SD_8255_Port_B							EQU		1
 SD_8255_Port_C							EQU		2
 SD_8255_Control_Port					EQU		3
-Serial_UART_base						EQU		0
-Serial_UART_transmitByte				EQU		0
-Serial_UART_receiveByte					EQU		0
 
 ;----------------------------------------------------------------------
 ;

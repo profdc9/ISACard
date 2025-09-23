@@ -82,7 +82,7 @@ SDServer_SendReceive:
 	add		bl,SD_8255_Port_C
 	mov		bh,bl
 	mov		bl,dl
-	add		bl,SD_8255_Port_A
+;	add		bl,SD_8255_Port_A			; This is not needed since SD_8255_Port_A=0
 
 	call	SDServer_WriteBytes.SendAByte
 
@@ -177,11 +177,6 @@ SDServer_OutputWithParameters_ReturnCodeInAL:
 ;		AX BX
 ;--------------------------------------------------------------------
 SDServer_WriteBytes:
-;	mov		bl,dl
-;	add		bl,SD_8255_Port_C
-;	mov		bh,bl
-;	mov		bl,dl
-;	add		bl,SD_8255_Port_A
 .SendAByte:
 	es lodsw
 	mov		dl,bl
