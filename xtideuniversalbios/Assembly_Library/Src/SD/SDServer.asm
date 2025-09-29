@@ -43,6 +43,7 @@ SDServer_SendReceive:
 
 ;-----------------------------------------------------------------------
 ; Set up Port 2 mode on 8255 again if for some reason it got reset
+	and		dl,0FCh		; get rid of bottom two bits because I/O addresses are 4 byte aligned
 	add		dl,SD_8255_Control_Port
 	mov		al,0FAh
 	out		dx,al		; initialize 8255 mode 2
