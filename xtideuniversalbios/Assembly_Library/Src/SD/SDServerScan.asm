@@ -177,27 +177,28 @@ SDInTimeout:
 ;	Corrupts registers:
 ;		AX
 SDServer_CheckPort:
+	and		dl,0FCh
 	add		dl,SD_8255_Control_Port
 	mov		al,0FAh
 	out		dx,al		; initialize 8255 mode 2
 	sub		dl,SD_8255_Control_Port
 
 	push	cx
-	mov		cx,4			; Try ring up byte four times
+	mov		cx,16			; Try ring up byte sixteen times
 .SDServer_CheckPort1:
 	mov		al,0eeh
 	call	SDOutTimeout		; Output a byte
-	jnc		SHORT .SDServer_NextIter
+	jc		SHORT .SDServer_NextIter
 	call	SDInTimeout			; Input the response
-	jnc		SHORT .SDServer_NextIter
+	jc		SHORT .SDServer_NextIter
 	cmp		al,047h				; Return this byte on success
 	jnz		SHORT .SDServer_NextIter
 
 	mov		al,0edh
 	call	SDOutTimeout		; Output a byte
-	jnc		SHORT .SDServer_NextIter
+	jc		SHORT .SDServer_NextIter
 	call	SDInTimeout			; Input the response
-	jnc		SHORT .SDServer_NextIter
+	jc		SHORT .SDServer_NextIter
 	cmp		al,09Ch				; Return this byte on success
 	jz		SHORT .SDServer_CheckPort2
 

@@ -179,7 +179,7 @@ SDServer_OutputWithParameters_ReturnCodeInAL:
 ;--------------------------------------------------------------------
 SDServer_WriteBytes:
 .SendAByte:
-	es lodsw
+	es lodsb
 	mov		dl,bl
 	out		dx,al
 	mov		dl,bh

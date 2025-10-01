@@ -70,7 +70,6 @@ BYTE slotno = 0;
 /* When the target system does not support socket power control, there   */
 /* is nothing to do in these functions and chk_power always returns 1.   */
 
-static
 void power_on (void)
 {
 	cli();

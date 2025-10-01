@@ -35,7 +35,8 @@
 #include "pindefs.h"
 
 #undef USE_ETHERNET
-#define DEBUG_SERIAL
+#undef DEBUG_SERIAL
+#define DEBUG_STATUS
 
 #ifdef USE_ETHERNET
 #include "w5500.h"
@@ -134,8 +135,8 @@ drive_geometry slot1_geometry;
 static char blockvolzero[] = "0:";
 static char blockvolone[] = "1:";
 
-static char blockdev0_filename[] = "0:BLKDEVXX.PO";
-static char blockdev1_filename[] = "1:BLKDEVXX.PO";
+static char blockdev0_filename[] = "0:BLKDEVXX.IMG";
+static char blockdev1_filename[] = "1:BLKDEVXX.IMG";
 
 extern "C" {
   void write_string(const char *c)
@@ -155,8 +156,8 @@ void read_eeprom(void)
     slot1_fileno = EEPROM.read(EEPROM_SLOT1);
   } else
   {
-    slot0_fileno = 0;
-    slot1_fileno = 0;
+    slot0_fileno = 1;
+    slot1_fileno = 1;
   }
 }
 
@@ -370,13 +371,13 @@ void unmount_drive(uint8_t cardslot)
 void do_initialize_ethernet(void)
 {
   uint8_t mac_address[6];
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
   SERIALPORT()->println("initialize ethernet");
 #endif
   for (uint8_t i = 0; i < 6; i++)
   {
     mac_address[i] = read_dataport();
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
     SERIALPORT()->print(mac_address[i], HEX);
     SERIALPORT()->print(" ");
 #endif
@@ -385,7 +386,7 @@ void do_initialize_ethernet(void)
     eth.end();
   if (eth.begin(mac_address))
   {
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
     SERIALPORT()->println("initialized");
 #endif
     ethernet_initialized = 1;
@@ -403,19 +404,19 @@ void do_initialize_ethernet(void)
 void do_poll_ethernet(void)
 {
   uint16_t len;
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
   SERIALPORT()->println("poll eth");
 #endif
   if (ethernet_initialized)
   {
     len = read_dataport();
     len |= ((uint16_t)read_dataport()) << 8;
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
     SERIALPORT()->print("read len ");
     SERIALPORT()->println(len, HEX);
 #endif
     len = eth.readFrame(NULL, len);
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
     SERIALPORT()->print("recv len ");
     SERIALPORT()->println(len, HEX);
 #endif
@@ -429,14 +430,14 @@ void do_poll_ethernet(void)
 void do_send_ethernet(void)
 {
   uint16_t len;
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
   SERIALPORT()->println("send eth");
 #endif
   if (ethernet_initialized)
   {
     len = read_dataport();
     len |= ((uint16_t)read_dataport()) << 8;
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
     SERIALPORT()->print("len ");
     SERIALPORT()->println(len, HEX);
 #endif
@@ -459,20 +460,20 @@ void setup()
   setup_serial();
   read_eeprom();
 
-  initialize_drive(1);
-  initialize_drive(0);
+  power_on();  // hack to disable SPI pins temporarily
+  //initialize_drive(1);
+  //initialize_drive(0);
 
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
   SERIALPORT()->println("0000");
   SERIALPORT()->print("d=");
   SERIALPORT()->print(sizeof(fs));
   SERIALPORT()->print(" f=");
   SERIALPORT()->print(freeRam());
   SERIALPORT()->print(" s=");
-  SERIALPORT()->print(slot0_state);
+  SERIALPORT()->print(slot0_fileno);
   SERIALPORT()->print(" ");
-  SERIALPORT()->println(slot1_state);
-  SERIALPORT()->flush();
+  SERIALPORT()->println(slot1_fileno);
 #endif
 
   DATAPORT_MODE_RECEIVE();
@@ -622,6 +623,9 @@ void command_inquire(uint8_t drive)
   initialize_drive(drive);
   if (((drive != 0) && (slot1_state == SLOT_STATE_NODEV)) || ((drive == 0) && (slot0_state == SLOT_STATE_NODEV)))
   {
+#ifdef DEBUG_SERIAL
+    SERIALPORT()->println("drive not initialized");
+#endif
     error_condition(0);
     return;
   }
@@ -632,7 +636,13 @@ void command_inquire(uint8_t drive)
     dg = (slot1_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot1_geometry;
   else
     dg = (slot0_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot0_geometry;
-    
+
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+  SERIALPORT()->print("states ");
+  SERIALPORT()->print(slot0_state);
+  SERIALPORT()->println(slot1_state);
+#endif
+
   memset((void *)response_buffer, '\000', sizeof(response_buffer));
   
   strcpy_flash((char *)&response_buffer[ATA_strModel], strModel);
@@ -661,24 +671,51 @@ void command_inquire(uint8_t drive)
   response_buffer[ATA_wPortIO8255] = cs.inquire.port_number;
   response_buffer[ATA_wGenCfg] = ATA_wGenCfg_FIXED;
   transmit_512_bytes((uint8_t *)response_buffer);
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+    SERIALPORT()->println("transmitted response buffer");
+#endif
   write_dataport(0x0);
+
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+  SERIALPORT()->print("geometry ");
+  SERIALPORT()->print(response_buffer[ATA_wCylCnt]);
+  SERIALPORT()->print("/");
+  SERIALPORT()->print(response_buffer[ATA_wHeadCnt]);
+  SERIALPORT()->print("/");
+  SERIALPORT()->print(response_buffer[ATA_wSPT]);
+  SERIALPORT()->print("/");
+  SERIALPORT()->print(response_buffer[ATA_wCaps]);
+  SERIALPORT()->print("/");
+  SERIALPORT()->println(dg->sector_count);  
+#endif
 }
 
 void loop()
 {
   uint8_t instr = read_dataport();
-  SERIALPORT()->print("instr=0");
-  SERIALPORT()->print(instr, 16);
-  SERIALPORT()->println("h");
   if (instr == 0xEE)              // special instrant command code
   {
     write_dataport(0x47);
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+  SERIALPORT()->println("g0xEE");
+#endif
     return;
   }
   if (instr == 0xED)              // special instrant command code
   {
     write_dataport(0x9C);
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+  SERIALPORT()->println("g0xED");
+#endif
     return;
+  }
+  if ((instr & 0xF0) != 0xA0)
+  {
+#ifdef DEBUG_SERIAL
+  SERIALPORT()->print("badcmd ");
+  SERIALPORT()->println(instr);
+#endif
+     return;    
   }
   cs.b[0] = instr;
   cs.b[1] = read_dataport();
@@ -687,16 +724,30 @@ void loop()
   cs.b[4] = read_dataport();
   cs.b[5] = read_dataport();
 
-  uint8_t drive = (cs.inquire.drive_and_head & ATA_DriveAndHead_Drive);
+  uint8_t drive = (cs.inquire.drive_and_head & ATA_DriveAndHead_Drive) != 0;
   uint8_t masked_command = cs.cylinder_head_sector.command & COMMAND_RWMASK;
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+  SERIALPORT()->print("cmd ");
+  SERIALPORT()->print(cs.cylinder_head_sector.command);
+  SERIALPORT()->print(" ");
+  SERIALPORT()->print(drive);
+  SERIALPORT()->print(" ");
+  SERIALPORT()->println(masked_command);
+#endif
   if (masked_command == COMMAND_INQUIRE)
   {
     command_inquire(drive);
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+    SERIALPORT()->println("inquire");
+#endif
     return;
   }
   if (((drive != 0) && (slot1_state == SLOT_STATE_NODEV)) || ((drive == 0) && (slot0_state == SLOT_STATE_NODEV)))
   {
     error_condition(masked_command);
+#ifdef DEBUG_SERIAL
+    SERIALPORT()->println("inactive");
+#endif
     return;
   }
 
@@ -718,13 +769,32 @@ void loop()
   if ((lba_sector + cs.cylinder_head_sector.count) > dg->sector_count)
   {
     error_condition(masked_command);
+#ifdef DEBUG_SERIAL
+    SERIALPORT()->print("invalid lba ");
+    SERIALPORT()->println(lba_sector);
+#endif
     return;
   }
+#if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
+    SERIALPORT()->print("chs");
+    SERIALPORT()->print(cs.cylinder_head_sector.cylinder);
+    SERIALPORT()->print(" ");
+    SERIALPORT()->print(cs.cylinder_head_sector.drive_and_head & ATA_COMMAND_HEADMASK);
+    SERIALPORT()->print(" ");
+    SERIALPORT()->print(cs.cylinder_head_sector.sector);
+    SERIALPORT()->print(" ");
+    SERIALPORT()->print(cs.cylinder_head_sector.count);
+    SERIALPORT()->print(" ");
+    SERIALPORT()->println(lba_sector);
+#endif
   if ( ((drive != 0) && (slot1_state == SLOT_STATE_FILEDEV)) || ((drive == 0) && (slot0_state == SLOT_STATE_FILEDEV)) )
   {
-      if (f_lseek(&slotfile, lba_sector << 9) != FR_OK)
+      if ((!check_change_filesystem(drive)) || (f_lseek(&slotfile, lba_sector << 9) != FR_OK))
       {
           error_condition(masked_command);
+#ifdef DEBUG_SERIAL
+          SERIALPORT()->println("file error");
+#endif
           return;
       }
       uint8_t count_sectors = cs.cylinder_head_sector.count;
@@ -740,6 +810,9 @@ void loop()
             {
                 cs.cylinder_head_sector.count = count_sectors;
                 error_condition(masked_command);
+#ifdef DEBUG_SERIAL
+                SERIALPORT()->println("file write error");
+#endif
                 return;        
             }
           }
@@ -756,6 +829,9 @@ void loop()
             {
                 cs.cylinder_head_sector.count = count_sectors;
                 error_condition(masked_command);
+#ifdef DEBUG_SERIAL
+                SERIALPORT()->println("file read error");
+#endif
                 return;        
             }
             transmit_512_bytes(buf);
@@ -773,10 +849,13 @@ void loop()
          uint8_t buf[512];
          uint16_t br;
          receive_512_bytes(buf);
-         if (disk_write(drive != 0, buf, lba_sector, 1) != 0)
+         if (disk_write(drive, buf, lba_sector, 1) != 0)
          {
              cs.cylinder_head_sector.count = count_sectors;
              error_condition(masked_command);
+#ifdef DEBUG_SERIAL
+                SERIALPORT()->println("disk write error");
+#endif
              return;        
          }
       }
@@ -789,10 +868,14 @@ void loop()
         count_sectors--;
         uint8_t buf[512];
         uint16_t br;
-        if (disk_read(drive != 0, buf, lba_sector, 1) != 0)
+        if (disk_read(drive, buf, lba_sector, 1) != 0)
         {
              cs.cylinder_head_sector.count = count_sectors;
              error_condition(masked_command);
+#ifdef DEBUG_SERIAL
+                SERIALPORT()->println("disk read error");
+#endif
+
              return;        
         }
         transmit_512_bytes(buf);
