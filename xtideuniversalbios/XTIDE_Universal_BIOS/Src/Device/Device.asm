@@ -26,6 +26,11 @@ SECTION .text
 	jnz		SHORT %1
 %endmacro
 
+%macro TEST_USING_DPT_AND_JUMP_IF_SD_DEVICE 1
+	test	BYTE [di+DPT.bFlagsHigh], FLGH_DPT_SD_DEVICE
+	jnz		SHORT %1
+%endmacro
+
 %macro CMP_USING_IDEVARS_IN_CSBP_AND_JUMP_IF 2
 	cmp		BYTE [cs:bp+IDEVARS.bDevice], %1
 	je		SHORT %2
@@ -74,9 +79,14 @@ Device_FinalizeDPT:
 ;	Corrupts registers:
 ;		AL, BX, CX, DX
 ;--------------------------------------------------------------------
-%ifdef MODULE_SERIAL	; IDE + Serial
+%ifdef MODULE_SERIAL OR MODULE_SD	; IDE + Serial
 Device_ResetMasterAndSlaveController:
+%ifdef MODULE_SD
+	TEST_USING_DPT_AND_JUMP_IF_SD_DEVICE		ReturnSuccessForSerialPort
+%endif
+%ifdef MODULE_SERIAL
 	TEST_USING_DPT_AND_JUMP_IF_SERIAL_DEVICE	ReturnSuccessForSerialPort
+%endif
 	jmp		IdeCommand_ResetMasterAndSlaveController
 
 %else					; IDE
@@ -144,13 +154,13 @@ ALIGN JUMP_ALIGN
 Device_OutputCommandWithParameters:
 %ifdef MODULE_SD
 	test	BYTE [di+DPT.bFlagsHigh], FLGH_DPT_SD_DEVICE
-	jnz		.Device_OutputCommandWithParameters1
+	jz		.Device_OutputCommandWithParameters1
 	jmp		SDCommand_OutputWithParameters
 %endif
 .Device_OutputCommandWithParameters1:
 %ifdef MODULE_SERIAL
 	test	BYTE [di+DPT.bFlagsHigh], FLGH_DPT_SERIAL_DEVICE
-	jnz		.Device_OutputCommandWithParameters2
+	jz		.Device_OutputCommandWithParameters2
 	jmp		SerialCommand_OutputWithParameters
 %endif
 .Device_OutputCommandWithParameters2:

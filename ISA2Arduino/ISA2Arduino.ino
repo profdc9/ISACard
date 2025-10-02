@@ -34,6 +34,15 @@
 #include "ff.h"
 #include "pindefs.h"
 
+#define AVR_FLASH_STORE
+#ifdef AVR_FLASH_STORE
+#define PSTORE PROGMEM
+#define strcpy_flash strcpy_P
+#else
+#define PSTORE
+#define strcpy_flash strcpy
+#endif
+
 #undef USE_ETHERNET
 #undef DEBUG_SERIAL
 #define DEBUG_STATUS
@@ -135,9 +144,6 @@ drive_geometry slot1_geometry;
 static char blockvolzero[] = "0:";
 static char blockvolone[] = "1:";
 
-static char blockdev0_filename[] = "0:BLKDEVXX.IMG";
-static char blockdev1_filename[] = "1:BLKDEVXX.IMG";
-
 extern "C" {
   void write_string(const char *c)
   {
@@ -212,16 +218,41 @@ uint8_t read_dataport(void)
   return byt;
 }
 
+inline void inline_write_dataport(uint8_t ch)
+{
+  while (READ_IBFA() != 0);
+  DATAPORT_MODE_TRANS();
+  WRITE_DATAPORT(ch);
+  STB_LOW();
+  STB_HIGH();
+  DATAPORT_MODE_RECEIVE();
+}
+
+inline uint8_t inline_read_dataport(void)
+{
+  uint8_t byt;
+
+  while (READ_OBFA() != 0);
+  ACK_LOW();
+  byt = READ_DATAPORT();
+  ACK_HIGH();
+  return byt;
+}
+
 uint8_t hex_digit(uint8_t ch)
 {
   if (ch < 10) return ch + '0';
   return ch - 10 + 'A';
 }
 
-void set_blockdev_filename(char *blockdev_filename, uint8_t fileno)
+const char blockdev_filename_prototype[] PSTORE="0:BLKDEVXX.IMG";
+
+void blockdev_filename(char *blockdev_filename, uint8_t drive_no, uint8_t fileno)
 {
+  strcpy_flash(blockdev_filename, blockdev_filename_prototype);
+  blockdev_filename[0] = drive_no + '0';
   blockdev_filename[8] = hex_digit(fileno >> 4);
-  blockdev_filename[9] = hex_digit(fileno & 0x0F);
+  blockdev_filename[9] = hex_digit(fileno & 0x0F);  
 }
 
 bool geometry_to_chs(drive_geometry *dg)
@@ -256,6 +287,8 @@ bool geometry_to_chs(drive_geometry *dg)
   return false;  // sizes above this are LBA only
 }
 
+static uint8_t filesystem_initialized[2];
+
 uint8_t check_change_filesystem(uint8_t current_filesystem)
 {
   if (last_drive == current_filesystem)
@@ -269,9 +302,16 @@ uint8_t check_change_filesystem(uint8_t current_filesystem)
   last_drive = 255;
   if (current_filesystem < 2)
   {
+    if (!filesystem_initialized[current_filesystem])
+    {
+        disk_initialize(current_filesystem);
+        filesystem_initialized[current_filesystem] = 1;
+    }
     if (f_mount(&fs, current_filesystem == 0 ? blockvolzero : blockvolone, 0) == FR_OK)
     {
-      if (f_open(&slotfile, current_filesystem == 0 ? blockdev0_filename : blockdev1_filename, FA_READ | FA_WRITE) == FR_OK)
+      char filename[20];
+      blockdev_filename(filename, current_filesystem, current_filesystem == 0 ? slot0_fileno : slot1_fileno);
+      if (f_open(&slotfile, filename, FA_READ | FA_WRITE) == FR_OK)
       {
         file_geometry.sector_count = f_size(&slotfile) >> 9;  // divide by 512 for sector count
         geometry_to_chs(&file_geometry);
@@ -304,7 +344,6 @@ void initialize_drive(uint8_t cardslot)
       } else
       {
         check_change_filesystem(255);
-        set_blockdev_filename(blockdev1_filename, slot1_fileno);
         if (check_change_filesystem(1))
           slot1_state = SLOT_STATE_FILEDEV;
       }
@@ -326,7 +365,6 @@ void initialize_drive(uint8_t cardslot)
       } else
       {
         check_change_filesystem(255);
-        set_blockdev_filename(blockdev0_filename, slot0_fileno);
         if (check_change_filesystem(0))
           slot0_state = SLOT_STATE_FILEDEV;
       }
@@ -489,6 +527,7 @@ inline uint32_t lba_sector_from_chs(const drive_geometry *dg)
 
 void transmit_512_bytes(uint8_t *b)
 {
+  cli();
   DATAPORT_MODE_TRANS();
   uint16_t i = 512;
   do
@@ -499,10 +538,12 @@ void transmit_512_bytes(uint8_t *b)
     STB_HIGH();
   } while ((--i) != 0);
   DATAPORT_MODE_RECEIVE();
+  sei();
 }
 
 void transmit_512_zeros(void)
 {
+  cli();
   DATAPORT_MODE_TRANS();
   uint16_t i = 512;
   do
@@ -513,10 +554,12 @@ void transmit_512_zeros(void)
     STB_HIGH();
   } while ((--i) != 0);
   DATAPORT_MODE_RECEIVE();
+  sei();
 }
 
 void receive_512_bytes(uint8_t *b)
 {
+  cli();
   uint16_t i = 512;
   do
   {
@@ -525,10 +568,12 @@ void receive_512_bytes(uint8_t *b)
     *b++ = READ_DATAPORT();
     ACK_HIGH();
   } while ((--i) != 0);
+  sei();
 }
 
 void receive_and_discard_512_bytes(void)
 {
+  cli();
   uint16_t i = 512;
   do
   {
@@ -537,6 +582,7 @@ void receive_and_discard_512_bytes(void)
     READ_DATAPORT();
     ACK_HIGH();
   } while ((--i) != 0);
+  sei();
 }
 
 void error_condition(uint8_t masked_command)
@@ -589,7 +635,7 @@ void error_condition(uint8_t masked_command)
 
 #define ATA_wGenCfg_FIXED 0x40
 
-#define ATA_wSDDriveFlags_Present   0x02
+#define ATA_wSDDriveFlags_Present   0x08
 
 void flip_words(uint16_t *words, uint8_t n)
 {
@@ -600,16 +646,6 @@ void flip_words(uint16_t *words, uint8_t n)
       n--;
    }
 }
-
-#define AVR_FLASH_STORE
-#ifdef AVR_FLASH_STORE
-#define PSTORE PROGMEM
-#define strcpy_flash strcpy_P
-#else
-#define PSTORE
-#define strcpy_flash strcpy
-#endif
-
 
 const uint8_t strModel[] PSTORE = "SD Card";
 const uint8_t strSD[] PSTORE = "Number X";
@@ -649,7 +685,7 @@ void command_inquire(uint8_t drive)
   flip_words(&response_buffer[ATA_strModel], ATA_strModel_Length/2);
 
   strcpy_flash((char *)&response_buffer[ATA_strSD], strSD);
-  ((uint8_t *)response_buffer)[6] = (drive != 0) + '0';
+  ((uint8_t *)response_buffer)[ATA_strSD*2+6] = (drive != 0) + '0';
   flip_words(&response_buffer[ATA_strSD], ATA_strSD_Length/2);
 
   strcpy_flash((char *)&response_buffer[ATA_strFirmware], strFirmware);
@@ -692,7 +728,7 @@ void command_inquire(uint8_t drive)
 
 void loop()
 {
-  uint8_t instr = read_dataport();
+  uint8_t instr = inline_read_dataport();
   if (instr == 0xEE)              // special instrant command code
   {
     write_dataport(0x47);
@@ -709,7 +745,7 @@ void loop()
 #endif
     return;
   }
-  if ((instr & 0xF0) != 0xA0)
+  if ((instr & 0xE8) != 0xA0)
   {
 #ifdef DEBUG_SERIAL
   SERIALPORT()->print("badcmd ");
@@ -718,11 +754,11 @@ void loop()
      return;    
   }
   cs.b[0] = instr;
-  cs.b[1] = read_dataport();
-  cs.b[2] = read_dataport();
-  cs.b[3] = read_dataport();
-  cs.b[4] = read_dataport();
-  cs.b[5] = read_dataport();
+  cs.b[1] = inline_read_dataport();
+  cs.b[2] = inline_read_dataport();
+  cs.b[3] = inline_read_dataport();
+  cs.b[4] = inline_read_dataport();
+  cs.b[5] = inline_read_dataport();
 
   uint8_t drive = (cs.inquire.drive_and_head & ATA_DriveAndHead_Drive) != 0;
   uint8_t masked_command = cs.cylinder_head_sector.command & COMMAND_RWMASK;
