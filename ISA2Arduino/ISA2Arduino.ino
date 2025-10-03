@@ -651,27 +651,45 @@ const uint8_t strModel[] PSTORE = "SD Card";
 const uint8_t strSD[] PSTORE = "Number X";
 const uint8_t strFirmware[] PSTORE = "Ver X.X";
 
+bool check_no_drive(uint8_t drive)
+{
+  return (((drive != 0) && (slot1_state == SLOT_STATE_NODEV)) || ((drive == 0) && (slot0_state == SLOT_STATE_NODEV)));
+}
+
+drive_geometry *geometry_for_drive(uint8_t drive)
+{
+  if (drive)
+    return (slot1_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot1_geometry;
+  return (slot0_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot0_geometry;
+}
+
 void command_inquire(uint8_t drive)
 {
   uint16_t response_buffer[256];
 
   unmount_drive(drive);
   initialize_drive(drive);
-  if (((drive != 0) && (slot1_state == SLOT_STATE_NODEV)) || ((drive == 0) && (slot0_state == SLOT_STATE_NODEV)))
+  if (check_no_drive(drive))
   {
+    if (drive == 0) 
+    {
+      if (slot0_fileno != 1)
+      {
+        slot0_fileno = 1;
+        initialize_drive(0);
+      }
+    } 
+    if (check_no_drive(drive))
+    {  
 #ifdef DEBUG_SERIAL
-    SERIALPORT()->println("drive not initialized");
+      SERIALPORT()->println("drive not initialized");
 #endif
-    error_condition(0);
-    return;
+      error_condition(0);
+      return;
+    }
   }
 
-  drive_geometry *dg;
-
-  if (drive)
-    dg = (slot1_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot1_geometry;
-  else
-    dg = (slot0_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot0_geometry;
+  drive_geometry *dg = geometry_for_drive(drive);
 
 #if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
   SERIALPORT()->print("states ");
@@ -726,6 +744,37 @@ void command_inquire(uint8_t drive)
 #endif
 }
 
+void do_set_volume(void)
+{
+  unmount_drive(0);
+  unmount_drive(1);
+  slot0_fileno = read_dataport();
+  slot1_fileno = read_dataport();
+  initialize_drive(0);
+  initialize_drive(1);
+  if (!check_no_drive(0))
+    write_eeprom();
+  write_dataport(0x81);
+}
+
+void do_get_volume(void)
+{
+  write_dataport(slot0_fileno);
+  write_dataport(slot1_fileno);
+  write_dataport(0x82);
+}
+
+void special_functions(uint8_t instr)
+{
+  switch (instr)
+  {
+    case 0x81: do_set_volume();
+               break;
+    case 0x82: do_get_volume();
+               break;
+  }
+}
+
 void loop()
 {
   uint8_t instr = inline_read_dataport();
@@ -743,6 +792,11 @@ void loop()
 #if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
   SERIALPORT()->println("g0xED");
 #endif
+    return;
+  }
+  if ((instr & 0xF0) == 0x80)
+  {
+    special_functions(instr);
     return;
   }
   if ((instr & 0xE8) != 0xA0)
@@ -778,7 +832,7 @@ void loop()
 #endif
     return;
   }
-  if (((drive != 0) && (slot1_state == SLOT_STATE_NODEV)) || ((drive == 0) && (slot0_state == SLOT_STATE_NODEV)))
+  if (check_no_drive(drive))
   {
     error_condition(masked_command);
 #ifdef DEBUG_SERIAL
@@ -787,11 +841,7 @@ void loop()
     return;
   }
 
-  drive_geometry *dg;
-  if (drive)
-    dg = (slot1_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot1_geometry;
-  else
-    dg = (slot0_state == SLOT_STATE_FILEDEV) ? &file_geometry : &slot0_geometry;
+  drive_geometry *dg = geometry_for_drive(drive);
 
   uint32_t lba_sector;
   if (cs.cylinder_head_sector.drive_and_head & ATA_COMMAND_LBA)
