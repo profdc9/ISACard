@@ -287,7 +287,17 @@ bool geometry_to_chs(drive_geometry *dg)
   return false;  // sizes above this are LBA only
 }
 
-static uint8_t filesystem_initialized[2];
+static uint8_t cards_initialized = 0;
+
+void check_cards_initialized(void)
+{
+  if (!cards_initialized)
+  {
+    disk_initialize(0);
+    disk_initialize(1); // initialize the two cards first so hopefully they will play nice together
+    cards_initialized = 1;
+  } 
+}
 
 uint8_t check_change_filesystem(uint8_t current_filesystem)
 {
@@ -302,11 +312,7 @@ uint8_t check_change_filesystem(uint8_t current_filesystem)
   last_drive = 255;
   if (current_filesystem < 2)
   {
-    if (!filesystem_initialized[current_filesystem])
-    {
-        disk_initialize(current_filesystem);
-        filesystem_initialized[current_filesystem] = 1;
-    }
+    check_cards_initialized();
     if (f_mount(&fs, current_filesystem == 0 ? blockvolzero : blockvolone, 0) == FR_OK)
     {
       char filename[20];
@@ -333,6 +339,7 @@ void initialize_drive(uint8_t cardslot)
     {
       if (slot1_fileno == 0)
       {
+        check_cards_initialized();
         if (disk_initialize(1) == 0)
         {
           if (mmc_disk_ioctl(GET_SECTOR_COUNT, &slot1_geometry.sector_count) == 0)
@@ -354,6 +361,7 @@ void initialize_drive(uint8_t cardslot)
     {
       if (slot0_fileno == 0)
       {
+        check_cards_initialized();
         if (disk_initialize(0) == 0)
         {
           if (mmc_disk_ioctl(GET_SECTOR_COUNT, &slot0_geometry.sector_count) == 0)
@@ -752,8 +760,7 @@ void do_set_volume(void)
   slot1_fileno = read_dataport();
   initialize_drive(0);
   initialize_drive(1);
-  if (!check_no_drive(0))
-    write_eeprom();
+  write_eeprom();
   write_dataport(0x81);
 }
 
