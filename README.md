@@ -26,3 +26,10 @@ JP9 shorts out a diode that drops the voltage on the ATMEGA328P.  Usually JP9 sh
 
 ![ISACard](ISACard/ISACard.png)
 
+Licensing:
+
+The software derived from the GNU General Public License 2.0 (XT IDE Universal BIOS) is likewise licensed under the GNU General Public License 2.0 as required by the license with the modified source code being publically made available here on the github.  Often software written by me is licensed under the zlib license.
+
+The schematic designs (but not the circuit design itself) and the PCB layouts are copyrighted according to the Creative Commons 4.0 Attribution Share-Alike license.
+
+None of these licenses should prevent anyone who wishes to reproduce this hardware and software and sell it from doing so, even for a profit.  However, source code modifications to the GPL licensed code must be made available with the product and likewise licensed under the GPLv2.
