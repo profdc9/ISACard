@@ -181,10 +181,12 @@ SDServer_CheckPort:
 	add		dl,SD_8255_Control_Port
 	mov		al,0FAh
 	out		dx,al		; initialize 8255 mode 2
+	mov		al,01h
+	out		dx,al		; set C0=1 to tell interrupt routine we're busy
 	sub		dl,SD_8255_Control_Port
-
 	push	cx
 	mov		cx,16			; Try ring up byte sixteen times
+
 .SDServer_CheckPort1:
 	mov		al,0eeh
 	call	SDOutTimeout		; Output a byte
@@ -204,10 +206,14 @@ SDServer_CheckPort:
 
 .SDServer_NextIter:
 	loop	.SDServer_CheckPort1
-	pop		cx					; Did not get a response
-	stc
+	stc							; Did not get a response
+.SDServer_EndFunc:
+	pop		cx
+	xor		al,al
+	add		dl,SD_8255_Control_Port
+	out		dx,al		; set C0=0 to tell interrupt routine no longer busy
+	sub		dl,SD_8255_Control_Port
 	ret
 .SDServer_CheckPort2:
-	pop		cx
 	clc
-	ret
+	jc		SHORT .SDServer_EndFunc

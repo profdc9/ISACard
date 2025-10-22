@@ -47,6 +47,8 @@ SDServer_SendReceive:
 	add		dl,SD_8255_Control_Port
 	mov		al,0FAh
 	out		dx,al		; initialize 8255 mode 2
+	mov		al,01h
+	out		dx,al		; tell interrupt routine were busy with C0=1
 	sub		dl,SD_8255_Control_Port
 
 	mov		al, [bp+SDServer_Command.bSectorCount]
@@ -148,6 +150,10 @@ SDServer_SendReceive:
 ALIGN JUMP_ALIGN
 SDServer_OutputWithParameters_ReturnCodeInAL:
 	mov		ah, al						; for success, AL will already be zero
+	xor		al, al						; set al = 0
+	add		dl,SD_8255_Control_Port
+	out		dx, al						; tell interrupt routine were no longer busy with C0=0
+	sub		dl,SD_8255_Control_Port
 
 	pop		bx							; recover "ax" (command and count) from stack
 	pop		cx							; recover saved sector count

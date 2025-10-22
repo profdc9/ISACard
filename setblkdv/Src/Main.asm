@@ -183,6 +183,8 @@ SDServer_CheckPort:
 	add		dl,SD_8255_Control_Port
 	mov		al,0FAh
 	out		dx,al		; initialize 8255 mode 2
+	mov		al,01h
+	out		dx,al		; C0=1 interrupt routine shouldnt interfere
 	sub		dl,SD_8255_Control_Port
 
 	push	cx
@@ -339,6 +341,11 @@ Main_Start:
 
 .ExitToDOS:
 	; Exit to DOS
+	mov		dx, [ioPortAddress]
+	and		dl,0FCh
+	add		dl,SD_8255_Control_Port
+	mov		al,0h
+	out		dx,al			; Set C0=0 to say interrupts are OK again
 	mov 	ax, 04C00h		; Errorlevel 0 in AL
 	int		021h
 
