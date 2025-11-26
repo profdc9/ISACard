@@ -330,6 +330,10 @@ boolean Wiznet5500::begin(const uint8_t *mac_address)
         // Failed to put socket 0 into MACRaw mode
         return false;
     }
+    setSn_IR(Sn_IR_RECV);
+    setSn_IMR(Sn_IR_RECV);
+    setSIMR(0x01);
+    setSIR(0x01);
 
     // Success
     return true;
@@ -337,8 +341,12 @@ boolean Wiznet5500::begin(const uint8_t *mac_address)
 
 void Wiznet5500::end()
 {
+    
     setSn_CR(Sn_CR_CLOSE);
 
+    setSIMR(0x00);
+    setSn_IMR(0x00);
+    setSIR(0xFF);
     // clear all interrupt of the socket
     setSn_IR(0xFF);
 
@@ -358,6 +366,33 @@ static void write_length(uint16_t data_len)
   STB_LOW();
   STB_HIGH();
   DATAPORT_MODE_RECEIVE();
+}
+
+uint16_t Wiznet5500::discardFrame()
+{
+    uint16_t len = getSn_RX_RSR();
+    
+    if (len > 0)
+    {
+        uint8_t head[2];
+        uint16_t data_len=0;
+
+        wizchip_recv_data(head, 2);
+        setSn_CR(Sn_CR_RECV);
+
+        data_len = head[0];
+        data_len = (data_len<<8) + head[1];
+        data_len -= 2;
+
+        wizchip_recv_ignore(data_len);
+        setSn_CR(Sn_CR_RECV);
+        setSIR(0x00);
+        setSn_IR(0xFF);
+        return data_len;
+   }
+  setSIR(0x00);
+  setSn_IR(0xFF);
+  return 0;
 }
 
 uint16_t Wiznet5500::readFrame(uint8_t *buffer, uint16_t bufsize)
@@ -382,6 +417,8 @@ uint16_t Wiznet5500::readFrame(uint8_t *buffer, uint16_t bufsize)
             write_length(0);
             wizchip_recv_ignore(data_len);
             setSn_CR(Sn_CR_RECV);
+            setSIR(0x00);
+            setSn_IR(0xFF);
             return 0;
         }
 
@@ -391,6 +428,8 @@ uint16_t Wiznet5500::readFrame(uint8_t *buffer, uint16_t bufsize)
 #endif
         wizchip_recv_data(buffer, data_len);
         setSn_CR(Sn_CR_RECV);
+        setSIR(0x00);
+        setSn_IR(0xFF);
 #if 1
         return data_len;
 #else

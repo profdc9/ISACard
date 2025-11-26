@@ -89,6 +89,14 @@ public:
     uint16_t readFrame(uint8_t *buffer, uint16_t bufsize);
 
 
+    /**
+     * Discard an Ethernet frame
+     * @return the length of the discarded packet
+     *         or 0 if no packet was received
+     */
+    uint16_t discardFrame(void);
+
+
 private:
 
     //< SPI interface Read operation in Control Phase
@@ -459,6 +467,42 @@ private:
      */
     inline uint8_t getMR() {
         return wizchip_read(BlockSelectCReg, MR);
+    }
+
+    /**
+     * Set Mode Register
+     * @param (uint8_t)mr The value to be set.
+     * @sa getMR()
+     */
+    inline void setSIR(uint8_t intmask) {
+        wizchip_write(BlockSelectCReg, SIR, intmask);
+    }
+
+    /**
+     * Get Mode Register
+     * @return uint8_t. The value of Mode register.
+     * @sa setMR()
+     */
+    inline uint8_t getSIR() {
+        return wizchip_read(BlockSelectCReg, SIR);
+    }
+
+    /**
+     * Set Mode Register
+     * @param (uint8_t)mr The value to be set.
+     * @sa getMR()
+     */
+    inline void setSIMR(uint8_t intmask) {
+        wizchip_write(BlockSelectCReg, SIMR, intmask);
+    }
+
+    /**
+     * Get Mode Register
+     * @return uint8_t. The value of Mode register.
+     * @sa setMR()
+     */
+    inline uint8_t getSIMR() {
+        return wizchip_read(BlockSelectCReg, SIMR);
     }
 
     /**

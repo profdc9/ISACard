@@ -18,8 +18,13 @@
 #include "pindefs.h"
 
 /* Peripheral controls (Platform dependent) */
-#define CS_LOW()		do { PORTB &= (slotno ?  ~0x02 : ~0x04); } while (0) /* Set MMC_CS = low */
-#define	CS_HIGH()		do { PORTB |= 0x07; } while (0) /* Set MMC_CS = high */
+#ifdef BITBANG_WRITE_SERIAL
+#define CS_LOW()		do { PORTB &= (slotno ?  ~0x00 : ~0x04); } while (0) /* Set MMC_CS = low */
+#define	CS_HIGH()		do { PORTB |= 0x05; } while (0) /* Set MMC_CS = high */
+#else
+#define CS_LOW()    do { PORTB &= (slotno ?  ~0x02 : ~0x04); } while (0) /* Set MMC_CS = low */
+#define CS_HIGH()   do { PORTB |= 0x07; } while (0) /* Set MMC_CS = high */
+#endif
 #define MMC_CD			(1)	/* Test if card detected.   yes:true, no:false, default:true */
 #define MMC_WP			(0)	/* Test if write protected. yes:true, no:false, default:false */
 #define	FCLK_SLOW()		do { SPCR |= (_BV(SPR0)|_BV(SPR1)); } while (0)	/* Set SPI clock for initialization (100-400kHz) */

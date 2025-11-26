@@ -206,14 +206,15 @@ SDServer_CheckPort:
 
 .SDServer_NextIter:
 	loop	.SDServer_CheckPort1
-	stc							; Did not get a response
+	mov		ah,80h				; Did not get a response
 .SDServer_EndFunc:
 	pop		cx
 	xor		al,al
 	add		dl,SD_8255_Control_Port
 	out		dx,al		; set C0=0 to tell interrupt routine no longer busy
 	sub		dl,SD_8255_Control_Port
+	rcl		ah,1			; set/clear carry bit
 	ret
 .SDServer_CheckPort2:
-	clc
-	jc		SHORT .SDServer_EndFunc
+	xor		ah,ah
+	jmp		SHORT .SDServer_EndFunc

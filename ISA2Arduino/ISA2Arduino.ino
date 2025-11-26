@@ -43,18 +43,22 @@
 #define strcpy_flash strcpy
 #endif
 
-#undef USE_ETHERNET
-#undef DEBUG_SERIAL
+#define USE_ETHERNET
+#define DEBUG_SERIAL
 #define DEBUG_STATUS
 
 #ifdef USE_ETHERNET
 #include "w5500.h"
 #endif
 
+#ifndef BITBANG_WRITE_SERIAL
+#undef DEBUG_SERIAL
+#endif
+
 #ifdef DEBUG_SERIAL
-#include <SoftwareSerial.h>
-SoftwareSerial softSerial(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX);
-#define SERIALPORT() (&softSerial)
+#include "BitBangWriteSerial.h"
+BitBangWriteSerial bitBangWriteSerial(BITBANG_WRITE_SERIAL_TX_PIN);
+#define SERIALPORT() (&bitBangWriteSerial)
 #endif
 
 #define SD_SERVER_VERSION 0x0101
@@ -69,7 +73,8 @@ SoftwareSerial softSerial(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX);
 
 #ifdef USE_ETHERNET
 uint8_t ethernet_initialized = 0;
-Wiznet5500 eth(8);
+uint8_t ethernet_waiting_for_read = 0;
+Wiznet5500 eth(CS3);
 #endif
 
 typedef union _cmd_struct
@@ -189,10 +194,8 @@ void setup_serial(void)
   Serial.end();
   DISABLE_RXTX_PINS();
 #ifdef DEBUG_SERIAL
-#ifdef SOFTWARE_SERIAL
-  softSerial.begin(9600);
-  pinMode(SOFTWARE_SERIAL_RX, INPUT);
-  pinMode(SOFTWARE_SERIAL_TX, OUTPUT);
+#ifdef BITBANG_WRITE_SERIAL
+  bitBangWriteSerial.begin(9600);
 #endif
 #endif
 }
@@ -447,7 +450,21 @@ void do_initialize_ethernet(void)
   return 1;
 }
 
-void do_poll_ethernet(void)
+void do_ethernet_reset_interrupt()
+{
+  eth.discardFrame();
+  ETHERNET_CLEAR_OUTPUT_INTERRUPT_PIN();
+}
+
+void do_dummy_read_ethernet(void)
+{
+  volatile uint8_t temp = read_dataport();
+  temp = ((uint16_t)read_dataport()) << 8;
+  write_dataport(0);
+  write_dataport(0);  
+}
+
+void do_read_ethernet(void)
 {
   uint16_t len;
 #if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
@@ -462,6 +479,7 @@ void do_poll_ethernet(void)
     SERIALPORT()->println(len, HEX);
 #endif
     len = eth.readFrame(NULL, len);
+    ETHERNET_CLEAR_OUTPUT_INTERRUPT_PIN();
 #if defined(DEBUG_SERIAL) && defined(DEBUG_STATUS)
     SERIALPORT()->print("recv len ");
     SERIALPORT()->println(len, HEX);
@@ -500,10 +518,22 @@ int freeRam ()
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
+void setup_ethernet_pins(void)
+{
+    pinMode(CS3, OUTPUT);
+    digitalWrite(CS3, HIGH);
+    pinMode(ETHERNET_INPUT_INTERRUPT_PIN, INPUT);
+    pinMode(ETHERNET_OUTPUT_INTERRUPT_PIN, OUTPUT);
+    digitalWrite(ETHERNET_OUTPUT_INTERRUPT_PIN, LOW);
+}
+
 void setup()
 {
   setup_pins();
   setup_serial();
+#ifdef USE_ETHERNET
+  setup_ethernet_pins();
+#endif
   read_eeprom();
 
   power_on();  // hack to disable SPI pins temporarily
@@ -779,12 +809,33 @@ void special_functions(uint8_t instr)
                break;
     case 0x82: do_get_volume();
                break;
+#ifdef USE_ETHERNET
+    case 0x83: do_send_ethernet();
+               break;
+    case 0x84: do_dummy_read_ethernet();
+               break;
+    case 0x85: do_initialize_ethernet();
+               break;
+#endif
   }
 }
 
 void loop()
 {
-  uint8_t instr = inline_read_dataport();
+  do
+  {
+#ifdef USE_ETHERNET
+    if ((ethernet_initialized) && (!ethernet_waiting_for_read) && (!ETHERNET_READ_INPUT_INTERRUPT_PIN()))
+    {
+      ETHERNET_SET_OUTPUT_INTERRUPT_PIN();
+      ethernet_waiting_for_read = 1;
+    }
+#endif
+  } while (READ_OBFA() != 0);
+  ACK_LOW();
+  uint8_t instr = READ_DATAPORT();
+  ACK_HIGH();
+
   if (instr == 0xEE)              // special instrant command code
   {
     write_dataport(0x47);
@@ -801,6 +852,20 @@ void loop()
 #endif
     return;
   }
+  
+#ifdef USE_ETHERNET
+  if (ethernet_waiting_for_read)   // if we are interrupted, next command MUST be a read, otherwise ditch the patcket
+  {
+    ethernet_waiting_for_read = 0;
+    if (instr == 0x84) 
+    {
+      do_read_ethernet();
+      return;
+    }
+    do_ethernet_reset_interrupt();
+  }
+#endif
+
   if ((instr & 0xF0) == 0x80)
   {
     special_functions(instr);
