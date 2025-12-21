@@ -1,3 +1,0 @@
-(fp_lib_table
-  (lib (name "ISACard")(type "KiCad")(uri "${KIPRJMOD}/ISACard.pretty")(options "")(descr ""))
-)
