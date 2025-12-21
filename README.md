@@ -28,7 +28,25 @@ There is an ICSP connect that may be used to flash the ATMEGA328P in situ.  Make
 
 JP9 shorts out a diode that drops the voltage on the ATMEGA328P.  Usually JP9 should be present but may be removed if there are problems with some SD cards.  J4 is a debugging connector, and J3 is a connector intended to go to a Wiznet 5500 ethernet module through a 10 position IDC cable.
 
+## Using the ethernet capability.
+
+A common Wiznet W5500 adapter board can be connected to the PC card using a 10 pin IDC ribbon cable.  A photograph of this board is shown below.  This adapter board has a 10 pin header on it with a pinout that corresponds to a 10 pin header marked "EXTSPI/W5500" on the card.  A 10 pin IDC ribbon cable may be used to connect the two boards.  A DOS Ethernet packet driver has been written to allow a TCP/IP stack such as MTCP (<https://www.brutman.com/mTCP/>) to be used in MSDOS which this driver has been tested with.  This packet driver has the following invocation:
+
+```shell
+ISA5500 <Software IRQ> <Hardware IRQ> <I/O Address>.
+```
+
+For example, with a software IRQ of 0x60, hardware IRQ of 3, and an I/O address of 0x330, the invocation command is:
+
+```shell
+ISA5500 0x60 3 0x330
+```
+
+Because the ethernet and SD card share the same microcontroller, they can not be used simultaneously, and the drivers take turns between mass storage calls and ethernet calls.
+
 ![ISACard](ISACard/ISACard.png)
+
+![ISACardPicture](ISACard_picture.jpg)
 
 ## Licensing
 
