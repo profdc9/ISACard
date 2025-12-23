@@ -314,8 +314,7 @@ boolean Wiznet5500::begin(const uint8_t *mac_address, bool spiinit)
     DDRB = 0x2F;
     PORTB = 0x3F;
     SPCR = _BV(SPE) | _BV(MSTR);
-    //SPSR = _BV(SPI2X);
-    SPSR = 0;
+    SPSR = _BV(SPI2X);
     sei();
 #else
     pinMode(_cs, OUTPUT);

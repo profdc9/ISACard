@@ -2,7 +2,7 @@
 
 This is a simple card that provides two SD cards as mass storage devices on PC compatibles in an ISA slot.  This design is an adaptation of the Apple II version of the card (<https://www.github.com/profdc9/Apple2Card>).  For building in the future, it is designed to use only the most common chips: 74HCT32, 74HCT86, 28C64B/27C128/28C256, 82C55A, and ATMEGA328P.  It does not use Compactflash format as that is a rather uncommon memory card format at the time of this writing (Oct 2025).  The SD card interface is not as fast as a Compactflash card, however, being read through SPI.  Hopefully, the components to build this board will be available for many years to come to retro enthusiasts.
 
-There is also a 10 pin SPI port to connect an external Wiznet 5500 Ethernet port.  A simple packet driver needs to be written to interface this to the MSDOS TCP/IP stacks.
+There is also a 10 pin SPI port to connect an external Wiznet 5500 Ethernet port.  A simple packet driver is written to interface this to the MSDOS TCP/IP stacks as described below.
 
 The Arduino firmware (in the ISA2Arduino directory) communicates through the 8255 bidirectional parallel port to the ISA bus.  It can expose a SD card either as a single raw block device, or it can use an image file on a FAT16/32 filesystem on the SD card as the block device.  Block device image files are named `BLKDEVXX.IMG` where XX is a hexadecimal number between 01h and 0FFh denoting the file number.  The default (and fallback) is to use `BLKDEV01.IMG` on the SD card in SLOT 1 if it is formatted for a FAT FS.  There is a MSDOS COM file called "SETBLKDV" that sets the block device number to both SD slots, with the format being:
 
@@ -42,7 +42,14 @@ For example, with a software IRQ of 0x60, hardware IRQ of 3, and an I/O address 
 ISA5500 0x60 3 0x330
 ```
 
-Because the ethernet and SD card share the same microcontroller, they can not be used simultaneously, and the drivers take turns between mass storage calls and ethernet calls.
+Because the ethernet and SD card share the same microcontroller, they can not be used simultaneously, and the drivers take turns between mass storage calls and ethernet calls.  In order to assemble the packet driver into a COM executable, you will need an assembler like Microsoft or Turbo assembler, and the  assemble source files from the packet driver distribution (PKTD11A.ZIP PKTD11B.ZIP PKTD11C.ZIP) (<http://crynwr.com/drivers/>).   You also need to add this to the Makefile:
+
+```makefile
+isa5500.com: head.obj isa5500.obj tail.obj
+	$(LINK) head isa5500 tail,isa5500/m;
+	exe2com isa5500
+	del isa5500.exe
+```
 
 ![ISACard](ISACard/ISACard.png)
 
